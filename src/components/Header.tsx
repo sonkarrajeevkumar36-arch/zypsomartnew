@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Phone, LogOut, User, Download } from 'lucide-react';
+import { Search, Phone, LogOut, User, Download, ShoppingCart, Package } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { Language } from '../types';
 import { getTranslation } from '../translations';
@@ -14,6 +14,9 @@ interface HeaderProps {
   isSyncing?: boolean;
   isAppInstalled?: boolean;
   canInstall?: boolean;
+  cartCount?: number;
+  onOpenOrders?: () => void;
+  onOpenCart?: () => void;
   onInstallClick?: () => void;
   onSearchChange: (q: string) => void;
   onRefresh?: () => void;
@@ -29,6 +32,9 @@ export function Header({
   appLogoUrl,
   isAppInstalled,
   canInstall,
+  cartCount = 0,
+  onOpenOrders,
+  onOpenCart,
   onInstallClick,
   onSearchChange,
   onLanguageToggle,
@@ -37,12 +43,12 @@ export function Header({
   const t = (key: string, params?: Record<string, string | number>) => getTranslation(lang, key, params);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-5 pb-3 px-3 sm:px-6 border-b border-slate-100 space-y-2.5 sm:space-y-3 shadow-xs">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-4 pb-3 px-3 sm:px-6 border-b border-slate-100 space-y-2.5 sm:space-y-3 shadow-xs">
       <div className="flex items-center justify-between gap-2">
         {/* Logo & Branding - Pure customer brand representation */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
           <div
-            className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-md shadow-green-100 border border-slate-100 bg-white p-1 shrink-0 flex items-center justify-center"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-sm shadow-green-100 border border-slate-100 bg-white p-1 shrink-0 flex items-center justify-center"
           >
             <img
               src={appLogoUrl || defaultAppLogo}
@@ -55,18 +61,18 @@ export function Header({
             />
           </div>
 
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-base sm:text-xl font-black text-slate-900 tracking-tight leading-none truncate">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 flex-nowrap">
+              <h1 className="text-base sm:text-xl font-black text-slate-900 tracking-tight leading-none whitespace-nowrap">
                 {t('appName')}
               </h1>
-              <span className="bg-green-100 text-green-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase shrink-0">
+              <span className="bg-green-100 text-green-700 text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded uppercase shrink-0">
                 Instant
               </span>
             </div>
             <div className="flex items-center gap-1 mt-0.5 sm:mt-1">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shrink-0" />
-              <p className="text-[9px] sm:text-[10px] font-black text-green-700 uppercase tracking-wider truncate">
+              <p className="text-[9px] sm:text-[10px] font-black text-green-700 uppercase tracking-wider whitespace-nowrap">
                 {t('deliveryTime')}
               </p>
             </div>
@@ -74,7 +80,42 @@ export function Header({
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Desktop Orders Button */}
+          {onOpenOrders && (
+            <button
+              id="header-orders-btn"
+              type="button"
+              onClick={onOpenOrders}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 shadow-2xs transition-all cursor-pointer"
+              title={t('orders')}
+            >
+              <Package className="w-4 h-4 text-slate-500" />
+              <span>{t('orders')}</span>
+            </button>
+          )}
+
+          {/* Desktop Cart Button */}
+          {onOpenCart && (
+            <button
+              id="header-cart-btn"
+              type="button"
+              onClick={onOpenCart}
+              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 bg-green-600 hover:bg-green-700 active:scale-95 text-white rounded-xl text-xs font-black shadow-sm shadow-green-600/20 transition-all cursor-pointer"
+              title={t('cart')}
+            >
+              <div className="relative flex items-center">
+                <ShoppingCart className="w-4 h-4" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2.5 bg-amber-400 text-slate-950 text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-black">
+                    {cartCount}
+                  </span>
+                )}
+              </div>
+              <span>{t('cart')}</span>
+            </button>
+          )}
+
           {/* In-App Install Prompt Button (Hidden if already installed) */}
           {!isAppInstalled && canInstall && onInstallClick && (
             <button
@@ -129,7 +170,7 @@ export function Header({
         <input
           type="text"
           placeholder={t('searchPlaceholder')}
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 sm:py-2.5 pl-9 pr-4 text-[16px] sm:text-xs font-medium focus:outline-none placeholder:text-slate-400 focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all shadow-none"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl h-10 sm:h-11 pl-9 pr-9 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all shadow-none leading-normal"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />
