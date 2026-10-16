@@ -31,6 +31,7 @@ import { AdminModal } from './components/AdminModal';
 import { AuthModal } from './components/AuthModal';
 import { AlertModal } from './components/AlertModal';
 import { InstallAppModal } from './components/InstallAppModal';
+import defaultAppLogo from './assets/logo.png';
 
 // Initial starter mock products for instant zero-latency experience if Firestore is initializing
 const defaultInitialProducts: Product[] = [
@@ -162,6 +163,31 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isAppInstalled, setIsAppInstalled] = useState<boolean>(false);
   const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
+  const [showInstalledSuccessModal, setShowInstalledSuccessModal] = useState<boolean>(false);
+
+  // Standalone mode launch splash screen
+  const [showStandaloneSplash, setShowStandaloneSplash] = useState<boolean>(() => {
+    try {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as unknown as { standalone?: boolean })?.standalone === true;
+      const alreadyShown = sessionStorage.getItem('zypsomart_standalone_splash_shown') === 'true';
+      return isStandalone && !alreadyShown;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    if (showStandaloneSplash) {
+      try {
+        sessionStorage.setItem('zypsomart_standalone_splash_shown', 'true');
+      } catch {}
+      const timer = setTimeout(() => {
+        setShowStandaloneSplash(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [showStandaloneSplash]);
 
   // User Banner Visibility preference (persisted in localStorage)
   const [isSeasonalBannerHidden, setIsSeasonalBannerHidden] = useState<boolean>(() => {
@@ -279,6 +305,7 @@ export default function App() {
       setIsAppInstalled(true);
       setDeferredPrompt(null);
       setShowInstallModal(false);
+      setShowInstalledSuccessModal(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -526,7 +553,9 @@ export default function App() {
             setDeliveryCharge(data.deliveryCharge ?? 25);
             setSupportNumber(data.supportNumber || '8090315246');
             setIsShopClosed(data.isClosed ?? false);
-            setAppLogoUrl(data.appLogoUrl || '');
+            const rawLogo = (data.appLogoUrl || '').trim();
+            const isLikelyImage = rawLogo.startsWith('data:image') || rawLogo.startsWith('/') || /\.(png|jpe?g|webp|svg|gif)(\?.*)?$/i.test(rawLogo);
+            setAppLogoUrl(isLikelyImage ? rawLogo : '');
           }
         },
         (err) => {
@@ -901,6 +930,7 @@ export default function App() {
       if (choiceResult?.outcome === 'accepted') {
         setIsAppInstalled(true);
         setShowInstallModal(false);
+        setShowInstalledSuccessModal(true);
       }
     } catch (err) {
       console.warn('[PWA Install Prompt Error]:', err);
@@ -1248,7 +1278,61 @@ export default function App() {
         onClose={handleDismissInstall}
         lang={lang}
         appLogoUrl={appLogoUrl}
+        isInstalledSuccess={false}
       />
+
+      {/* Installed Confirmation Modal (shown after install) */}
+      <InstallAppModal
+        isOpen={showInstalledSuccessModal}
+        onInstall={() => {}}
+        onClose={() => setShowInstalledSuccessModal(false)}
+        lang={lang}
+        appLogoUrl={appLogoUrl}
+        isInstalledSuccess={true}
+      />
+
+      {/* Standalone Launch Splash displaying the new Installed App Logo */}
+      <AnimatePresence>
+        {showStandaloneSplash && (
+          <motion.div
+            id="standalone-launch-splash"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[999] bg-white flex flex-col items-center justify-center p-6 text-center select-none"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', damping: 18, stiffness: 200 }}
+              className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-white p-3 shadow-2xl shadow-green-600/15 border-2 border-green-100 flex items-center justify-center mb-5"
+            >
+              <img
+                src={defaultAppLogo}
+                alt="Zypsomart"
+                className="w-full h-full object-contain"
+              />
+            </motion.div>
+            <motion.h1
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.15 }}
+              className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight"
+            >
+              Zypsomart
+            </motion.h1>
+            <motion.p
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.25 }}
+              className="text-xs sm:text-sm font-black text-green-700 uppercase tracking-widest mt-1.5 flex items-center gap-1.5"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
+              <span>Fast Grocery & Essentials</span>
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AdminModal
         isOpen={isAdminDashboardOpen}
