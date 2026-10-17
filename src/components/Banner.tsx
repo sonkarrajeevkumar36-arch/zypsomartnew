@@ -15,17 +15,18 @@ export function Banner({ lang, onHide }: BannerProps) {
   return (
     <div className="relative overflow-hidden group">
       <div className="relative rounded-2xl p-5 min-w-full h-44 flex flex-col justify-center overflow-hidden shadow-lg transition-all duration-500 hover:scale-[1.01]">
-        {/* Background Image */}
+        {/* Background Image - Bright, clear, and vivid grocery products showcase */}
         <div
-          className="absolute inset-0 z-0 bg-cover bg-center brightness-50 contrast-125 transition-transform duration-1000 group-hover:scale-105"
+          className="absolute inset-0 z-0 bg-cover bg-center brightness-105 contrast-105 saturate-110 transition-transform duration-1000 group-hover:scale-105"
           style={{
             backgroundImage:
-              'url("https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1200&auto=format&fit=crop")'
+              'url("https://images.unsplash.com/photo-1542838132-92c53300491e?q=85&w=1200&auto=format&fit=crop")'
           }}
         />
-        {/* Gradients */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-        <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/60 to-transparent" />
+        {/* Soft, readable scrim on text side without obscuring grocery items */}
+        <div className="absolute inset-0 z-0 bg-gradient-to-r from-black/60 via-black/25 via-45% to-transparent" />
+        {/* Lightened bottom overlay so grocery produce is bright and clearly visible */}
+        <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/15 via-transparent to-transparent pointer-events-none" />
 
         {/* Badge */}
         <div className="absolute top-3.5 left-4 z-20 flex items-center gap-1.5 bg-yellow-400 text-slate-900 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-md">
@@ -51,11 +52,11 @@ export function Banner({ lang, onHide }: BannerProps) {
         )}
 
         {/* Content */}
-        <div className="relative z-10 space-y-1.5">
+        <div className="relative z-10 space-y-1.5 max-w-[85%]">
           <motion.h3
             initial={{ opacity: 0, x: -15 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-xl font-black leading-tight text-white drop-shadow-md"
+            className="text-xl font-black leading-tight text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]"
           >
             {t('brandHindiPromise')}
           </motion.h3>
@@ -66,10 +67,10 @@ export function Banner({ lang, onHide }: BannerProps) {
             transition={{ delay: 0.08 }}
             className="flex flex-col gap-0.5"
           >
-            <p className="text-xs font-black uppercase tracking-wider text-green-400 drop-shadow-sm">
+            <p className="text-xs font-black uppercase tracking-wider text-emerald-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
               LOWEST PRICE GUARANTEED
             </p>
-            <p className="text-[9px] font-bold text-white/80 tracking-tight">
+            <p className="text-[9px] font-bold text-white/90 tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
               {t('avlIn')}
             </p>
           </motion.div>

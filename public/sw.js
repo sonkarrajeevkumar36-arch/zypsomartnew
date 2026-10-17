@@ -1,5 +1,5 @@
 // Zypsomart PWA Service Worker
-const CACHE_NAME = 'zypsomart-v3';
+const CACHE_NAME = 'zypsomart-v4';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -8,7 +8,8 @@ const PRECACHE_ASSETS = [
   '/pwa-512x512.png',
   '/pwa-maskable-512x512.png',
   '/apple-touch-icon.png',
-  '/logo.png'
+  '/logo.png',
+  '/seasonal_banner.png'
 ];
 
 // Install: precache essential shell assets
