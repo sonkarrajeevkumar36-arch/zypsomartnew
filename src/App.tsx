@@ -402,8 +402,38 @@ export default function App() {
         activeUidRef.current = newUid;
 
         // Load current user's own data from storage
-        const nextCart = loadUserCart(newUid);
+        let nextCart = loadUserCart(newUid);
         const nextData = loadUserData(newUid);
+
+        // If transitioning from guest to logged-in user, preserve & merge guest cart items!
+        if (!previousUid && newUid) {
+          const guestCart = loadUserCart(null);
+          if (guestCart.length > 0) {
+            if (nextCart.length === 0) {
+              nextCart = guestCart;
+            } else {
+              // Merge items from guest cart
+              guestCart.forEach((gItem) => {
+                const existingIdx = nextCart.findIndex((nItem) => nItem.id === gItem.id);
+                if (existingIdx >= 0) {
+                  nextCart[existingIdx].qty += gItem.qty;
+                } else {
+                  nextCart.push(gItem);
+                }
+              });
+            }
+            try {
+              localStorage.setItem(getUserStorageKey(newUid, 'cart'), JSON.stringify(nextCart));
+              localStorage.removeItem(getUserStorageKey(null, 'cart'));
+            } catch {}
+          }
+
+          // Inherit guest contact info if user profile doesn't have it
+          const guestData = loadUserData(null);
+          if (!nextData.name && guestData.name) nextData.name = guestData.name;
+          if (!nextData.phone && guestData.phone) nextData.phone = guestData.phone;
+          if (!nextData.address && guestData.address) nextData.address = guestData.address;
+        }
 
         // Apply new user's state atomically
         setCurrentUser(user);
@@ -429,7 +459,7 @@ export default function App() {
     return () => unsub();
   }, []);
 
-  // Sync user orders in real time
+  // Sync user orders in real time with client-side sorting (no Firestore composite index bottleneck)
   useEffect(() => {
     if (!currentUser) {
       setUserOrders([]);
@@ -440,8 +470,7 @@ export default function App() {
       const q = query(
         collection(db, 'orders'),
         where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc'),
-        limit(30)
+        limit(50)
       );
 
       const unsub = onSnapshot(
@@ -451,6 +480,17 @@ export default function App() {
             id: docSnap.id,
             ...(docSnap.data() as any)
           }));
+          // Sort client-side by creation timestamp to eliminate composite index requirement
+          list.sort((a, b) => {
+            const getMillis = (val: any) => {
+              if (!val) return 0;
+              if (typeof val.toMillis === 'function') return val.toMillis();
+              if (val.seconds) return val.seconds * 1000;
+              if (val instanceof Date) return val.getTime();
+              return 0;
+            };
+            return getMillis(b.createdAt) - getMillis(a.createdAt);
+          });
           setUserOrders(list);
         },
         (err) => {
@@ -727,6 +767,20 @@ export default function App() {
       return;
     }
 
+    const rawPhone = customerPhone.trim().replace(/[\s\-\(\)]/g, '');
+    const isPhoneValid = /^(\+?91)?[6-9]\d{9}$/.test(rawPhone) || /^\d{10}$/.test(rawPhone);
+    if (!isPhoneValid) {
+      setActiveAlert({
+        type: 'error',
+        title: lang === 'hi' ? 'अमान्य फ़ोन नंबर' : 'Invalid Phone Number',
+        message:
+          lang === 'hi'
+            ? 'कृपया एक वैध 10-अंकीय मोबाइल नंबर दर्ज करें ताकि डिलीवरी राइडर आपसे संपर्क कर सके।'
+            : 'Please enter a valid 10-digit mobile number so our delivery rider can contact you.'
+      });
+      return;
+    }
+
     if (cart.length === 0) return;
 
     const itemTotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
@@ -973,13 +1027,7 @@ export default function App() {
         isAppInstalled={isAppInstalled}
         canInstall={!isAppInstalled && !!deferredPrompt}
         cartCount={cartTotalCount}
-        onOpenOrders={() => {
-          if (!currentUser) {
-            setIsAuthOpen(true);
-          } else {
-            setIsOrdersOpen(true);
-          }
-        }}
+        onOpenOrders={() => setIsOrdersOpen(true)}
         onOpenCart={() => setIsCartOpen(true)}
         onInstallClick={() => setShowInstallModal(true)}
         onSearchChange={setSearchQuery}
@@ -997,8 +1045,8 @@ export default function App() {
           onSelectCategory={setSelectedCategory}
         />
 
-        {/* Banner Restore Notification Bar when any or all banners are hidden */}
-        {!searchQuery && (isSeasonalBannerHidden || isPromoBannerHidden) && (
+        {/* Banner Restore Notification Bar when seasonal banner is hidden */}
+        {!searchQuery && isSeasonalBannerHidden && (
           <div
             id="hidden-banners-bar"
             className="flex flex-wrap items-center justify-between gap-2.5 px-4 py-2.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200 rounded-2xl text-xs text-slate-600 shadow-2xs transition-all"
@@ -1008,24 +1056,11 @@ export default function App() {
                 <EyeOff className="w-3.5 h-3.5" />
               </div>
               <span className="font-semibold text-slate-700">
-                {isSeasonalBannerHidden && isPromoBannerHidden
-                  ? t('bannersHidden')
-                  : isSeasonalBannerHidden
-                  ? t('seasonalHidden')
-                  : t('promoHidden')}
+                {t('seasonalHidden')}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              {(!isSeasonalBannerHidden || !isPromoBannerHidden) && (
-                <button
-                  type="button"
-                  onClick={handleHideAllBanners}
-                  className="px-2.5 py-1 text-slate-500 hover:text-slate-800 text-[11px] font-bold hover:underline cursor-pointer"
-                >
-                  {t('hideAllBanners')}
-                </button>
-              )}
               <button
                 id="restore-banners-btn"
                 type="button"
@@ -1047,15 +1082,7 @@ export default function App() {
               setSelectedCategory(catName);
             }}
             onHide={handleHideSeasonalBanner}
-            onHideAll={handleHideAllBanners}
-          />
-        )}
-
-        {/* Promo Banner if not searching */}
-        {!searchQuery && !isPromoBannerHidden && (
-          <Banner
-            lang={lang}
-            onHide={handleHidePromoBanner}
+            onHideAll={handleHideSeasonalBanner}
           />
         )}
 
@@ -1131,13 +1158,7 @@ export default function App() {
         {/* Orders */}
         <button
           type="button"
-          onClick={() => {
-            if (!currentUser) {
-              setIsAuthOpen(true);
-            } else {
-              setIsOrdersOpen(true);
-            }
-          }}
+          onClick={() => setIsOrdersOpen(true)}
           className="flex flex-col items-center gap-0.5 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
         >
           <Package className="w-5 h-5" />
@@ -1250,6 +1271,9 @@ export default function App() {
         onCancelOrder={handleCancelOrder}
         onRequestReturn={handleOpenReturnModal}
         onReorder={handleReorder}
+        onSelectCategory={(cat) => setSelectedCategory(cat)}
+        isLoggedIn={!!currentUser}
+        onOpenAuth={() => setIsAuthOpen(true)}
       />
 
       {/* Dedicated Return Order Modal solving user's issue */}
@@ -1401,8 +1425,14 @@ export default function App() {
         onSuccess={(email, isLogin) => {
           setActiveAlert({
             type: 'success',
-            title: isLogin ? 'Welcome Back!' : 'Account Created!',
-            message: `Signed in as ${email}`
+            title: isLogin ? (lang === 'hi' ? 'स्वागत है!' : 'Welcome Back!') : (lang === 'hi' ? 'खाता बन गया!' : 'Account Created!'),
+            message: `Signed in as ${email}`,
+            onConfirm: () => {
+              setActiveAlert(null);
+              if (cart.length > 0) {
+                setIsCartOpen(true);
+              }
+            }
           });
         }}
         onError={(errMsg) => {

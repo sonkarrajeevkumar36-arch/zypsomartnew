@@ -23,10 +23,6 @@ export function Banner({ lang, onHide }: BannerProps) {
               'url("https://images.unsplash.com/photo-1542838132-92c53300491e?q=85&w=1200&auto=format&fit=crop")'
           }}
         />
-        {/* Soft, readable scrim on text side without obscuring grocery items */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-r from-black/60 via-black/25 via-45% to-transparent" />
-        {/* Lightened bottom overlay so grocery produce is bright and clearly visible */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/15 via-transparent to-transparent pointer-events-none" />
 
         {/* Badge */}
         <div className="absolute top-3.5 left-4 z-20 flex items-center gap-1.5 bg-yellow-400 text-slate-900 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-md">

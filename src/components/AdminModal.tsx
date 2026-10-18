@@ -65,6 +65,8 @@ export function AdminModal({
 
   // Operation states
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [confirmDeleteCatId, setConfirmDeleteCatId] = useState<string | null>(null);
+  const [confirmDeleteProdId, setConfirmDeleteProdId] = useState<string | null>(null);
   const [adminAuthEmail, setAdminAuthEmail] = useState<string>('sonkarrajeevkumar36@gmail.com');
   const [adminAuthPassword, setAdminAuthPassword] = useState<string>('');
   const [isAdminLoggingIn, setIsAdminLoggingIn] = useState<boolean>(false);
@@ -152,8 +154,7 @@ export function AdminModal({
     }
   };
 
-  const handleDeleteCategory = async (catId: string, catName: string) => {
-    if (!confirm(`Are you sure you want to delete "${catName}"?`)) return;
+  const executeDeleteCategory = async (catId: string) => {
     try {
       await deleteDoc(doc(db, 'categories', catId));
       onShowSuccess('Category Deleted', 'Category removed successfully.');
@@ -210,8 +211,7 @@ export function AdminModal({
     }
   };
 
-  const handleDeleteProduct = async (prodId: string, prodName: string) => {
-    if (!confirm(`Delete product "${prodName}"?`)) return;
+  const executeDeleteProduct = async (prodId: string) => {
     try {
       await deleteDoc(doc(db, 'products', prodId));
       onShowSuccess('Product Deleted', 'Item removed from inventory.');
@@ -707,13 +707,36 @@ export function AdminModal({
                     >
                       <span>{cat.icon || '📦'}</span>
                       <span>{cat.name || 'Category'}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCategory(cat.id, cat.name || 'Category')}
-                        className="p-1 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-full transition-colors cursor-pointer"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                      {confirmDeleteCatId === cat.id ? (
+                        <div className="flex items-center gap-1 pl-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              executeDeleteCategory(cat.id);
+                              setConfirmDeleteCatId(null);
+                            }}
+                            className="px-1.5 py-0.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold rounded cursor-pointer"
+                          >
+                            Del?
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteCatId(null)}
+                            className="px-1.5 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-[10px] rounded cursor-pointer"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteCatId(cat.id)}
+                          className="p-1 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-full transition-colors cursor-pointer"
+                          title="Delete category"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -875,13 +898,36 @@ export function AdminModal({
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProduct(prod.id, prod.name)}
-                          className="p-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-lg"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {confirmDeleteProdId === prod.id ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                executeDeleteProduct(prod.id);
+                                setConfirmDeleteProdId(null);
+                              }}
+                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black rounded-lg cursor-pointer shadow-xs"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteProdId(null)}
+                              className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-[10px] font-bold rounded-lg cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteProdId(prod.id)}
+                            className="p-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-lg cursor-pointer transition-colors"
+                            title="Delete item"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

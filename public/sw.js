@@ -1,5 +1,5 @@
 // Zypsomart PWA Service Worker
-const CACHE_NAME = 'zypsomart-v4';
+const CACHE_NAME = 'zypsomart-v5';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

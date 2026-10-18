@@ -39,9 +39,9 @@ export function CartModal({
 
   const t = (key: string, params?: Record<string, string | number>) => getTranslation(lang, key, params);
 
-  const itemTotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const itemTotal = cart.reduce((sum, item) => sum + (Number(item?.price) || 0) * (Number(item?.qty) || 0), 0);
   const isFreeDelivery = itemTotal > 100;
-  const appliedDeliveryCharge = cart.length > 0 && !isFreeDelivery ? deliveryCharge : 0;
+  const appliedDeliveryCharge = cart.length > 0 && !isFreeDelivery ? (Number(deliveryCharge) || 0) : 0;
   const grandTotal = itemTotal + appliedDeliveryCharge;
 
   return (
