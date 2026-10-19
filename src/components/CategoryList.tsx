@@ -30,15 +30,15 @@ export function CategoryList({
         <div
           className={`w-12 h-12 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-xs border transition-all ${
             selectedCategory === 'All'
-              ? 'bg-green-600 border-green-600 text-white shadow-green-200 ring-2 ring-green-500/30'
+              ? 'bg-theme-primary border-theme-primary text-white theme-shadow ring-2 ring-[var(--theme-primary)]/30'
               : 'bg-white border-slate-200 text-slate-700'
           }`}
         >
           🛍️
         </div>
         <span
-          className={`text-xs font-bold whitespace-nowrap text-center ${
-            selectedCategory === 'All' ? 'text-green-700 font-extrabold' : 'text-slate-600'
+          className={`text-xs font-bold whitespace-nowrap text-center transition-colors ${
+            selectedCategory === 'All' ? 'text-theme-primary font-extrabold' : 'text-slate-600'
           }`}
         >
           {t('categories.all')}
@@ -61,15 +61,15 @@ export function CategoryList({
             <div
               className={`w-12 h-12 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-xs border transition-all ${
                 isSelected
-                  ? 'bg-green-600 border-green-600 text-white shadow-green-200 ring-2 ring-green-500/30'
+                  ? 'bg-theme-primary border-theme-primary text-white theme-shadow ring-2 ring-[var(--theme-primary)]/30'
                   : 'bg-white border-slate-200 text-slate-700'
               }`}
             >
               {cat.icon || '📦'}
             </div>
             <span
-              className={`text-xs font-bold whitespace-nowrap text-center ${
-                isSelected ? 'text-green-700 font-extrabold' : 'text-slate-600'
+              className={`text-xs font-bold whitespace-nowrap text-center transition-colors ${
+                isSelected ? 'text-theme-primary font-extrabold' : 'text-slate-600'
               }`}
             >
               {catName || t('categories.all')}

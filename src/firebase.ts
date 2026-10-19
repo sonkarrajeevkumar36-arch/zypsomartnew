@@ -29,25 +29,6 @@ setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.warn('[Firebase Auth] Persistence error:', err);
 });
 
-// Diagnostic check
-setTimeout(async () => {
-  try {
-    const probeDoc = doc(db, '_probe_connection', 'test');
-    await getDocFromServer(probeDoc);
-    console.log('[Firebase Init] Firestore communication established.');
-  } catch (err: any) {
-    const code = err?.code || '';
-    const msg = err?.message || String(err);
-    if (code === 'permission-denied') {
-      console.log('[Firebase Init] Firestore is online and security rules active.');
-    } else if (msg.includes('offline')) {
-      console.warn('[Firebase Init] Network client is currently in offline mode.');
-    } else {
-      console.log('[Firebase Init] Status check:', code, msg);
-    }
-  }
-}, 1500);
-
 export function getFriendlyErrorMessage(err: any): string {
   const code = err?.code || '';
   const message = err?.message || String(err);

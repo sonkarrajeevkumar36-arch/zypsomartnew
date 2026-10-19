@@ -872,22 +872,25 @@ export function AdminModal({
                 </div>
 
                 <div className="grid grid-cols-1 gap-2">
-                  {products.map((prod) => (
+                  {(products || []).map((prod) => (
                     <div
                       key={prod.id}
                       className="bg-slate-800 p-3 rounded-xl border border-slate-700 flex items-center justify-between gap-3"
                     >
                       <div className="w-10 h-10 bg-slate-900 rounded-lg p-1 flex items-center justify-center shrink-0">
                         <img
-                          src={prod.imageUrl}
-                          alt=""
+                          src={prod.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=80'}
+                          alt={prod.name || 'Product'}
                           className="max-w-full max-h-full object-contain"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=80';
+                          }}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-white truncate">{prod.name}</h4>
+                        <h4 className="text-xs font-bold text-white truncate">{prod.name || 'Item'}</h4>
                         <p className="text-[10px] text-slate-400">
-                          ₹{prod.price} / {prod.unit} • {prod.category}
+                          ₹{Number(prod.price) || 0} / {prod.unit || 'unit'} • {prod.category || 'General'}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">

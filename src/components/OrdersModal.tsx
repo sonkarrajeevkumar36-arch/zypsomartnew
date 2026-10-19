@@ -519,15 +519,15 @@ export function OrdersModal({
                       </div>
 
                       <div className="space-y-1 divide-y divide-slate-100/80">
-                        {order.items?.map((item, idx) => (
+                        {(order.items || []).map((item, idx) => (
                           <div key={idx} className="pt-1 first:pt-0 flex justify-between font-medium items-center">
                             <div className="flex items-center gap-2 truncate pr-2">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                              <span className="truncate text-slate-800 font-bold">{item.name}</span>
-                              <span className="text-[11px] text-slate-500 font-semibold shrink-0">× {item.qty}</span>
+                              <span className="truncate text-slate-800 font-bold">{item?.name || 'Item'}</span>
+                              <span className="text-[11px] text-slate-500 font-semibold shrink-0">× {item?.qty || 1}</span>
                             </div>
                             <span className="font-bold text-slate-900 shrink-0">
-                              ₹{(Number(item.price) || 0) * (Number(item.qty) || 1)}
+                              ₹{(Number(item?.price) || 0) * (Number(item?.qty) || 1)}
                             </span>
                           </div>
                         ))}

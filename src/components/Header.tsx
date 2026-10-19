@@ -18,6 +18,9 @@ interface HeaderProps {
   onOpenOrders?: () => void;
   onOpenCart?: () => void;
   onInstallClick?: () => void;
+  onOpenTheme?: () => void;
+  activeThemePrimary?: string;
+  activeThemeName?: string;
   onSearchChange: (q: string) => void;
   onRefresh?: () => void;
   onLanguageToggle: () => void;
@@ -36,6 +39,8 @@ export function Header({
   onOpenOrders,
   onOpenCart,
   onInstallClick,
+  onOpenTheme,
+  activeThemePrimary,
   onSearchChange,
   onLanguageToggle,
   onAuthClick
@@ -48,7 +53,8 @@ export function Header({
         {/* Logo & Branding - Pure customer brand representation */}
         <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
           <div
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-sm shadow-green-100 border border-slate-100 bg-white p-1 shrink-0 flex items-center justify-center"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-sm border border-slate-100 bg-white p-1 shrink-0 flex items-center justify-center transition-all"
+            style={{ boxShadow: '0 2px 10px -2px var(--theme-shadow)' }}
           >
             <img
               src={appLogoUrl || defaultAppLogo}
@@ -66,13 +72,13 @@ export function Header({
               <h1 className="text-base sm:text-xl font-black text-slate-900 tracking-tight leading-none whitespace-nowrap">
                 {t('appName')}
               </h1>
-              <span className="bg-green-100 text-green-700 text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded uppercase shrink-0">
+              <span className="bg-theme-light text-theme-dark border border-theme-light text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded uppercase shrink-0 transition-colors">
                 Instant
               </span>
             </div>
             <div className="flex items-center gap-1 mt-0.5 sm:mt-1">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shrink-0" />
-              <p className="text-[9px] sm:text-[10px] font-black text-green-700 uppercase tracking-wider whitespace-nowrap">
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0 bg-theme-primary transition-colors" />
+              <p className="text-[9px] sm:text-[10px] font-black text-theme-dark uppercase tracking-wider whitespace-nowrap transition-colors">
                 {t('deliveryTime')}
               </p>
             </div>
@@ -101,7 +107,7 @@ export function Header({
               id="header-cart-btn"
               type="button"
               onClick={onOpenCart}
-              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 bg-green-600 hover:bg-green-700 active:scale-95 text-white rounded-xl text-xs font-black shadow-sm shadow-green-600/20 transition-all cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 bg-theme-primary hover:bg-theme-primary-hover active:scale-95 text-white rounded-xl text-xs font-black theme-shadow transition-all cursor-pointer"
               title={t('cart')}
             >
               <div className="relative flex items-center">
@@ -122,11 +128,30 @@ export function Header({
               id="header-install-app-btn"
               type="button"
               onClick={onInstallClick}
-              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 bg-green-600 hover:bg-green-700 active:scale-95 text-white rounded-lg text-[10px] sm:text-xs font-black shadow-xs transition-all cursor-pointer"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 bg-theme-primary hover:bg-theme-primary-hover active:scale-95 text-white rounded-lg text-[10px] sm:text-xs font-black shadow-xs transition-all cursor-pointer"
               title={t('installApp')}
             >
               <Download className="w-3.5 h-3.5" />
               <span className="hidden sm:inline uppercase tracking-tight">{t('installApp')}</span>
+            </button>
+          )}
+
+          {/* Theme Switcher Button */}
+          {onOpenTheme && (
+            <button
+              id="header-theme-btn"
+              type="button"
+              onClick={onOpenTheme}
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-[10px] sm:text-xs font-black border border-slate-200 uppercase tracking-tight transition-all cursor-pointer active:scale-95"
+              title={lang === 'hi' ? 'बैनर थीम बदलें' : 'Change Banner Theme'}
+            >
+              <span
+                className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full shrink-0 shadow-2xs transition-colors ring-1 ring-black/20"
+                style={{ backgroundColor: activeThemePrimary || 'var(--theme-primary)' }}
+              />
+              <span className="hidden md:inline text-[10px]">
+                {lang === 'hi' ? 'थीम' : 'Theme'}
+              </span>
             </button>
           )}
 
@@ -153,7 +178,7 @@ export function Header({
             type="button"
             onClick={onAuthClick}
             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border-2 border-white shadow-sm overflow-hidden text-xs font-bold cursor-pointer transition-transform active:scale-90 ${
-              user ? 'bg-slate-900 text-white hover:bg-red-600' : 'bg-green-600 text-white hover:bg-green-700'
+              user ? 'bg-slate-900 text-white hover:bg-red-600' : 'bg-theme-primary text-white hover:bg-theme-primary-hover shadow-xs'
             }`}
             title={user ? 'Click to Logout' : 'Click to Login'}
           >
@@ -170,7 +195,7 @@ export function Header({
         <input
           type="text"
           placeholder={t('searchPlaceholder')}
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl h-10 sm:h-11 pl-9 pr-9 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all shadow-none leading-normal"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl h-10 sm:h-11 pl-9 pr-9 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[var(--theme-primary)] focus:ring-2 focus:ring-[var(--theme-primary)]/20 transition-all shadow-none leading-normal"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />

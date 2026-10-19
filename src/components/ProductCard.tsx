@@ -35,28 +35,32 @@ export function ProductCard({
       <div className="bg-slate-50 rounded-xl h-28 mb-2 flex items-center justify-center p-2 overflow-hidden relative">
         <img
           referrerPolicy="no-referrer"
-          src={product.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=80'}
-          alt={product.name}
+          src={product?.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=80'}
+          alt={product?.name || 'Product'}
           className="max-w-full max-h-full object-contain transition-transform duration-300 hover:scale-105"
           onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=80';
+            const target = e.currentTarget as HTMLImageElement;
+            if (!target.dataset.fallbackApplied) {
+              target.dataset.fallbackApplied = 'true';
+              target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=80';
+            }
           }}
         />
 
         {!isAvailable && (
           <div className="absolute top-2 right-2 bg-slate-900/85 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
-            {product.status === 'Out of Stock' ? t('soldOut') : product.status}
+            {product?.status === 'Out of Stock' ? t('soldOut') : (product?.status || 'Unavailable')}
           </div>
         )}
       </div>
 
       {/* Info */}
       <div className="flex flex-col mb-2">
-        <h3 className="text-xs font-bold text-slate-900 line-clamp-2 leading-snug" title={product.name}>
-          {product.name}
+        <h3 className="text-xs font-bold text-slate-900 line-clamp-2 leading-snug" title={product?.name || 'Item'}>
+          {product?.name || 'Item'}
         </h3>
         <span className="text-[10px] text-slate-400 font-semibold mt-0.5">
-          {product.category}
+          {product?.category || 'General'}
         </span>
       </div>
 
@@ -64,7 +68,7 @@ export function ProductCard({
       <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
         <div className="flex flex-col">
           <span className="font-black text-xs sm:text-sm text-slate-900 leading-none">
-            ₹{product.price}
+            ₹{Number(product?.price) || 0}
           </span>
           <span className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">
             / {lang === 'hi' && product?.unit ? t(`units.${(product.unit || '').toLowerCase()}`) || product.unit : (product?.unit || 'kg')}

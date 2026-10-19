@@ -154,17 +154,17 @@ export function ReturnOrderModal({
             <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  {t('items')} ({order.items.length})
+                  {t('items')} ({(order.items || []).length})
                 </span>
                 <span className="text-xs font-black text-slate-800">
-                  ₹{order.total}
+                  ₹{Number(order.total) || 0}
                 </span>
               </div>
               <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
-                {order.items.map((item, idx) => (
+                {(order.items || []).map((item, idx) => (
                   <div key={idx} className="flex justify-between text-xs font-medium text-slate-600">
-                    <span className="truncate pr-2">{item.name} × {item.qty}</span>
-                    <span className="font-semibold text-slate-800 shrink-0">₹{item.price * item.qty}</span>
+                    <span className="truncate pr-2">{item?.name || 'Item'} × {item?.qty || 1}</span>
+                    <span className="font-semibold text-slate-800 shrink-0">₹{(Number(item?.price) || 0) * (Number(item?.qty) || 1)}</span>
                   </div>
                 ))}
               </div>

@@ -46,7 +46,7 @@ export function AlertModal({ alert, onClose }: AlertModalProps) {
             <div
               className={`w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-inner ${
                 alert.type === 'success'
-                  ? 'bg-green-50 text-green-600'
+                  ? 'bg-theme-light text-theme-primary'
                   : alert.type === 'error'
                   ? 'bg-red-50 text-red-600'
                   : alert.type === 'confirm'
@@ -86,7 +86,7 @@ export function AlertModal({ alert, onClose }: AlertModalProps) {
                   ? 'bg-red-600 hover:bg-red-700 shadow-red-200'
                   : alert.type === 'confirm'
                   ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-200'
-                  : 'bg-green-600 hover:bg-green-700 shadow-green-200'
+                  : 'bg-theme-primary hover:bg-theme-primary-hover theme-shadow'
               }`}
             >
               {alert.confirmText || 'OK'}

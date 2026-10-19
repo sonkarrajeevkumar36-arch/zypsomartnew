@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingCart, Package, Home as HomeIcon, RotateCcw, Clock, Lock, Sparkles, EyeOff, Eye, Download } from 'lucide-react';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
@@ -19,6 +19,7 @@ import {
 import { auth, db, getFriendlyErrorMessage } from './firebase';
 import { Product, Category, Order, CartItem, ModalAlert, FlyingItem, Language, BeforeInstallPromptEvent } from './types';
 import { getTranslation } from './translations';
+import { getShuffledProducts } from './utils/productShuffle';
 import { Header } from './components/Header';
 import { Banner } from './components/Banner';
 import { CategoryList } from './components/CategoryList';
@@ -121,6 +122,7 @@ export default function App() {
   const [customerName, setCustomerName] = useState<string>(() => initialUserData.name || auth.currentUser?.displayName || '');
   const [customerPhone, setCustomerPhone] = useState<string>(() => initialUserData.phone || auth.currentUser?.phoneNumber || '');
   const [customerAddress, setCustomerAddress] = useState<string>(() => initialUserData.address || '');
+  const [isPlacingOrder, setIsPlacingOrder] = useState<boolean>(false);
 
   // Language
   const [lang, setLang] = useState<Language>(() => (localStorage.getItem('zypsum_lang') as Language) || 'en');
@@ -749,6 +751,8 @@ export default function App() {
 
   // Place Order
   const handlePlaceOrder = async () => {
+    if (isPlacingOrder) return;
+
     if (!currentUser) {
       setIsCartOpen(false);
       setIsAuthOpen(true);
@@ -768,7 +772,7 @@ export default function App() {
     }
 
     const rawPhone = customerPhone.trim().replace(/[\s\-\(\)]/g, '');
-    const isPhoneValid = /^(\+?91)?[6-9]\d{9}$/.test(rawPhone) || /^\d{10}$/.test(rawPhone);
+    const isPhoneValid = /^(\+?91|0)?[6-9]\d{9}$/.test(rawPhone) || /^\d{10}$/.test(rawPhone);
     if (!isPhoneValid) {
       setActiveAlert({
         type: 'error',
@@ -783,9 +787,21 @@ export default function App() {
 
     if (cart.length === 0) return;
 
-    const itemTotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    setIsPlacingOrder(true);
+    const itemTotal = cart.reduce((sum, item) => sum + (Number(item?.price) || 0) * (Number(item?.qty) || 0), 0);
     const appliedDelivery = itemTotal > 100 ? 0 : deliveryCharge;
     const finalTotal = itemTotal + appliedDelivery;
+
+    // Sanitize cart items to prevent undefined fields from rejecting Firestore write
+    const sanitizedItems = cart.map((item) => ({
+      id: String(item?.id || ''),
+      name: String(item?.name || 'Grocery Item'),
+      price: Number(item?.price) || 0,
+      qty: Number(item?.qty) || 1,
+      unit: String(item?.unit || 'item'),
+      imageUrl: String(item?.imageUrl || ''),
+      category: String(item?.category || 'General')
+    }));
 
     try {
       const minMinutes = 18;
@@ -793,7 +809,7 @@ export default function App() {
 
       await addDoc(collection(db, 'orders'), {
         userId: currentUser.uid,
-        items: cart,
+        items: sanitizedItems,
         total: finalTotal,
         status: 'placed',
         customerName: customerName.trim(),
@@ -823,6 +839,8 @@ export default function App() {
         title: lang === 'hi' ? 'ऑर्डर नहीं हो सका' : 'Order Failed',
         message: getFriendlyErrorMessage(err)
       });
+    } finally {
+      setIsPlacingOrder(false);
     }
   };
 
@@ -1002,15 +1020,25 @@ export default function App() {
     }
   };
 
-  // Filtered Products
-  const filteredProducts = products.filter((p) => {
+  // Deduplicated and randomized product catalog for the current page session.
+  // Shuffles into a fresh random order automatically on every page reload,
+  // while remaining strictly stable throughout normal user interactions.
+  const displayedCatalogProducts = useMemo(() => {
+    return getShuffledProducts(products);
+  }, [products]);
+
+  // Filtered Products for the active category, search query, or all items
+  const filteredProducts = useMemo(() => {
     const searchTarget = (searchQuery || '').trim().toLowerCase();
-    const matchesSearch = (p?.name || '').toLowerCase().includes(searchTarget);
     const normSelected = (selectedCategory || 'All').trim().toLowerCase();
-    const prodCategory = (p?.normalizedCategory || (p?.category || '')).trim().toLowerCase();
-    const matchesCategory = normSelected === 'all' || prodCategory === normSelected;
-    return matchesSearch && matchesCategory;
-  });
+
+    return displayedCatalogProducts.filter((p) => {
+      const matchesSearch = !searchTarget || (p?.name || '').toLowerCase().includes(searchTarget);
+      const prodCategory = (p?.normalizedCategory || (p?.category || '')).trim().toLowerCase();
+      const matchesCategory = normSelected === 'all' || prodCategory === normSelected;
+      return matchesSearch && matchesCategory;
+    });
+  }, [displayedCatalogProducts, searchQuery, selectedCategory]);
 
   const cartTotalCount = cart.reduce((s, i) => s + i.qty, 0);
 
@@ -1255,6 +1283,7 @@ export default function App() {
         customerName={customerName}
         customerPhone={customerPhone}
         customerAddress={customerAddress}
+        isPlacingOrder={isPlacingOrder}
         onCustomerNameChange={setCustomerName}
         onCustomerPhoneChange={setCustomerPhone}
         onCustomerAddressChange={setCustomerAddress}

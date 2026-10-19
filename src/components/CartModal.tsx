@@ -12,6 +12,7 @@ interface CartModalProps {
   customerName: string;
   customerPhone: string;
   customerAddress: string;
+  isPlacingOrder?: boolean;
   onCustomerNameChange: (val: string) => void;
   onCustomerPhoneChange: (val: string) => void;
   onCustomerAddressChange: (val: string) => void;
@@ -28,6 +29,7 @@ export function CartModal({
   customerName,
   customerPhone,
   customerAddress,
+  isPlacingOrder = false,
   onCustomerNameChange,
   onCustomerPhoneChange,
   onCustomerAddressChange,
@@ -247,11 +249,21 @@ export function CartModal({
               {/* Place Order CTA */}
               <button
                 type="button"
+                disabled={isPlacingOrder}
                 onClick={onPlaceOrder}
-                className="w-full bg-green-600 hover:bg-green-700 py-3.5 rounded-2xl text-white font-black transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+                className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed py-3.5 rounded-2xl text-white font-black transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
               >
-                <span>{t('placeOrder')}</span>
-                <ChevronRight className="w-4 h-4" />
+                {isPlacingOrder ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>{lang === 'hi' ? 'ऑर्डर प्रोसेस हो रहा है...' : 'Placing Order...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{t('placeOrder')}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
           )}

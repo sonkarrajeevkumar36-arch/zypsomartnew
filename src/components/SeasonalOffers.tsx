@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Language } from '../types';
 import { db } from '../firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { extractColorsFromImage, BannerThemePalette } from '../utils/themeManager';
 
 // Default local banner asset (can be replaced in public/ or src/assets/images/)
 import defaultBannerImg from '../assets/images/seasonal_banner.png';
@@ -33,6 +34,7 @@ export interface SeasonalOffersProps {
   onHide?: () => void;
   onHideAll?: () => void;
   bannerUrlOverride?: string;
+  onBannerColorExtracted?: (palette: BannerThemePalette) => void;
 }
 
 /**
@@ -42,7 +44,8 @@ export interface SeasonalOffersProps {
  */
 export function SeasonalOffers({
   onSelectOfferCategory,
-  bannerUrlOverride
+  bannerUrlOverride,
+  onBannerColorExtracted
 }: SeasonalOffersProps) {
   // Remote banner URL from Firestore if configured by store owner
   const [firestoreBannerUrl, setFirestoreBannerUrl] = useState<string>('');
@@ -96,6 +99,23 @@ export function SeasonalOffers({
     }
   };
 
+  const imgRef = React.useRef<HTMLImageElement>(null);
+
+  // Trigger color extraction if image is already loaded/cached
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0 && onBannerColorExtracted) {
+      try {
+        const palette = extractColorsFromImage(img);
+        if (palette) {
+          onBannerColorExtracted(palette);
+        }
+      } catch (e) {
+        console.warn('[Banner Palette Pre-extraction Note]:', e);
+      }
+    }
+  }, [activeImageSrc, onBannerColorExtracted]);
+
   return (
     <section
       id="seasonal-offers-container"
@@ -109,10 +129,19 @@ export function SeasonalOffers({
       >
         {/* Pure Image Banner: No text, no buttons, no badges, no overlays */}
         <img
+          ref={imgRef}
           id="seasonal-banner-img"
           src={activeImageSrc}
           alt="Zypsomart Special Offer"
           onError={() => setImageError(true)}
+          onLoad={(e) => {
+            if (onBannerColorExtracted) {
+              const palette = extractColorsFromImage(e.currentTarget);
+              if (palette) {
+                onBannerColorExtracted(palette);
+              }
+            }
+          }}
           referrerPolicy="no-referrer"
           loading="eager"
           className="w-full h-auto object-contain block select-none"

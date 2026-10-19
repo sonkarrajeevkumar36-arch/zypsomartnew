@@ -136,7 +136,17 @@ export const translations: Record<Language, Record<string, any>> = {
       dozen: "dozen",
       pair: "pair",
       box: "box"
-    }
+    },
+    bannerTheme: "Banner Theme",
+    changeTheme: "Change Theme",
+    themeModalTitle: "App UI Theme & Banner Colors",
+    themeModalSub: "Customize app theme colors or match automatically with the seasonal banner.",
+    autoBannerTheme: "Auto (From Banner)",
+    autoBannerThemeDesc: "Detects vibrant festive colors directly from the banner image",
+    presets: "Seasonal & Festive Themes",
+    customColor: "Custom Brand Color",
+    applyTheme: "Apply Theme",
+    themeApplied: "Theme Updated Successfully!"
   },
   hi: {
     appName: "जिप्सोमार्ट",
@@ -273,7 +283,17 @@ export const translations: Record<Language, Record<string, any>> = {
       dozen: "दर्जन",
       pair: "जोड़ी",
       box: "बॉक्स"
-    }
+    },
+    bannerTheme: "बैनर थीम",
+    changeTheme: "थीम बदलें",
+    themeModalTitle: "ऐप यूआई थीम और बैनर रंग",
+    themeModalSub: "ऐप थीम रंग बदलें या सीज़नल फेस्टिव बैनर से स्वचालित रूप से मिलाएँ।",
+    autoBannerTheme: "ऑटो (बैनर से)",
+    autoBannerThemeDesc: "बैनर इमेज से जीवंत उत्सव के रंगों का स्वचालित चयन",
+    presets: "उत्सव और सीज़नल थीम्स",
+    customColor: "कस्टम ब्रांड रंग",
+    applyTheme: "थीम लागू करें",
+    themeApplied: "थीम सफलतापूर्वक अपडेट हो गई!"
   }
 };
 
