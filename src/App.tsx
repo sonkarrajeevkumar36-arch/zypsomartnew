@@ -25,6 +25,7 @@ import { Banner } from './components/Banner';
 import { CategoryList } from './components/CategoryList';
 import { SeasonalOffers } from './components/SeasonalOffers';
 import { ProductCard } from './components/ProductCard';
+import { ProductDetailsModal } from './components/ProductDetailsModal';
 import { CartModal } from './components/CartModal';
 import { OrdersModal } from './components/OrdersModal';
 import { ReturnOrderModal } from './components/ReturnOrderModal';
@@ -36,12 +37,66 @@ import defaultAppLogo from './assets/logo.png';
 
 // Initial starter mock products for instant zero-latency experience if Firestore is initializing
 const defaultInitialProducts: Product[] = [
-  { id: 'def_1', name: 'Fresh Farm Eggs (12 pcs)', price: 84, unit: 'dozen', category: 'Eggs', imageUrl: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=200&auto=format&fit=crop&q=80', status: 'Available' },
-  { id: 'def_2', name: 'Pure Cow Milk (1 Litre)', price: 62, unit: 'litre', category: 'Drinks', imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=200&auto=format&fit=crop&q=80', status: 'Available' },
-  { id: 'def_3', name: 'Organic Red Tomatoes', price: 35, unit: 'kg', category: 'Vegetables', imageUrl: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=200&auto=format&fit=crop&q=80', status: 'Available' },
-  { id: 'def_4', name: 'Fresh Cavendish Bananas', price: 48, unit: 'dozen', category: 'Fruits', imageUrl: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=200&auto=format&fit=crop&q=80', status: 'Available' },
-  { id: 'def_5', name: 'Alphonso Mangoes Premium', price: 180, unit: 'kg', category: 'Fruits', imageUrl: 'https://images.unsplash.com/photo-1553279768-865429fa0078?w=200&auto=format&fit=crop&q=80', status: 'Available' },
-  { id: 'def_6', name: 'Gulab Jamun (500g)', price: 140, unit: 'pack', category: 'Sweets', imageUrl: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=200&auto=format&fit=crop&q=80', status: 'Available' }
+  {
+    id: 'def_1',
+    name: 'Fresh Farm Eggs (12 pcs)',
+    price: 84,
+    unit: 'dozen',
+    category: 'Eggs',
+    imageUrl: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=200&auto=format&fit=crop&q=80',
+    status: 'Available',
+    description: 'Farm-fresh organic brown & white eggs packed with essential proteins, vitamins, and minerals. Thoroughly cleaned, graded, and securely packaged to reach your kitchen intact.'
+  },
+  {
+    id: 'def_2',
+    name: 'Pure Cow Milk (1 Litre)',
+    price: 62,
+    unit: 'litre',
+    category: 'Drinks',
+    imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=200&auto=format&fit=crop&q=80',
+    status: 'Available',
+    description: 'Pasteurized, 100% wholesome pure cow milk from healthy dairy cows. Free from adulterants and preservatives, delivering farm-fresh creaminess and vital calcium.'
+  },
+  {
+    id: 'def_3',
+    name: 'Organic Red Tomatoes',
+    price: 35,
+    unit: 'kg',
+    category: 'Vegetables',
+    imageUrl: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=200&auto=format&fit=crop&q=80',
+    status: 'Available',
+    description: 'Crisp, vine-ripened organic tomatoes packed with rich lycopene and vitamin C. Ideal for curries, fresh salads, soups, and traditional Indian gravies.'
+  },
+  {
+    id: 'def_4',
+    name: 'Fresh Cavendish Bananas',
+    price: 48,
+    unit: 'dozen',
+    category: 'Fruits',
+    imageUrl: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=200&auto=format&fit=crop&q=80',
+    status: 'Available',
+    description: 'Naturally ripened, sweet Cavendish bananas with potassium-rich pulp. Delicious energy booster for morning smoothies, fruit bowls, or a quick wholesome snack.'
+  },
+  {
+    id: 'def_5',
+    name: 'Alphonso Mangoes Premium',
+    price: 180,
+    unit: 'kg',
+    category: 'Fruits',
+    imageUrl: 'https://images.unsplash.com/photo-1553279768-865429fa0078?w=200&auto=format&fit=crop&q=80',
+    status: 'Available',
+    description: 'Handpicked authentic Alphonso mangoes celebrated for their heavenly fragrance, vibrant saffron pulp, and irresistible sweetness. The undisputed king of mangoes.'
+  },
+  {
+    id: 'def_6',
+    name: 'Gulab Jamun (500g)',
+    price: 140,
+    unit: 'pack',
+    category: 'Sweets',
+    imageUrl: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=200&auto=format&fit=crop&q=80',
+    status: 'Available',
+    description: 'Traditional melt-in-mouth soft khoya dumplings soaked in warm rose and cardamom-infused sugar syrup. Perfect festive dessert for family celebrations.'
+  }
 ];
 
 const defaultInitialCategories: Category[] = [
@@ -138,6 +193,9 @@ export default function App() {
   const [orderToReturn, setOrderToReturn] = useState<Order | null>(null);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState<boolean>(false);
 
+  // Selected Product for dynamic Details Popup
+  const [selectedProductDetails, setSelectedProductDetails] = useState<Product | null>(null);
+
   // Modal alert
   const [activeAlert, setActiveAlert] = useState<ModalAlert | null>(null);
 
@@ -158,8 +216,10 @@ export default function App() {
   const [flyingItems, setFlyingItems] = useState<FlyingItem[]>([]);
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const cartIconRef = useRef<HTMLDivElement | null>(null);
-  const previousTotalRef = useRef<number>(0);
   const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isCelebrationActiveRef = useRef<boolean>(false);
+  const hasCelebratedForCurrentThresholdRef = useRef<boolean>(false);
+  const flyingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Native PWA beforeinstallprompt management
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -644,6 +704,7 @@ export default function App() {
             category: data?.category || 'General',
             normalizedCategory: data?.normalizedCategory || (data?.category || '').toLowerCase().trim(),
             status: data?.status || 'Available',
+            description: (data?.description || '').trim(),
             ...data
           };
         });
@@ -683,47 +744,88 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Free delivery threshold tracking
-  const rawItemTotal = cart.reduce((sum, i) => sum + (Number(i?.price) || 0) * (Number(i?.qty) || 0), 0);
+  // Free delivery threshold tracking with safe memoization
+  const rawItemTotal = useMemo(() => {
+    return cart.reduce((sum, i) => sum + (Number(i?.price) || 0) * (Number(i?.qty) || 0), 0);
+  }, [cart]);
+
+  // Clean up all timers safely on unmount to prevent memory leaks and zombie timers
   useEffect(() => {
-    if (rawItemTotal > 100 && previousTotalRef.current <= 100 && cart.length > 0) {
-      if (celebrationTimerRef.current) {
-        clearTimeout(celebrationTimerRef.current);
-        celebrationTimerRef.current = null;
-      }
-      setShowCelebration(true);
-      // Visible for exactly 1 second (1000ms), then automatically hidden
-      celebrationTimerRef.current = setTimeout(() => {
-        setShowCelebration(false);
-        celebrationTimerRef.current = null;
-      }, 1000);
-    }
-    previousTotalRef.current = rawItemTotal;
     return () => {
       if (celebrationTimerRef.current) {
         clearTimeout(celebrationTimerRef.current);
         celebrationTimerRef.current = null;
       }
+      flyingTimersRef.current.forEach((t) => clearTimeout(t));
+      flyingTimersRef.current = [];
     };
-  }, [rawItemTotal, cart.length]);
+  }, []);
 
-  // Cart operations
+  // Free delivery threshold detection:
+  // Shows smoothly for exactly 1000ms upon crossing > 100, then automatically dismisses.
+  // Never cleared prematurely by rapid item additions and never creates duplicate overlays.
+  useEffect(() => {
+    const isOverThreshold = rawItemTotal > 100 && cart.length > 0;
+
+    if (isOverThreshold) {
+      if (!hasCelebratedForCurrentThresholdRef.current && !isCelebrationActiveRef.current) {
+        hasCelebratedForCurrentThresholdRef.current = true;
+        isCelebrationActiveRef.current = true;
+
+        if (celebrationTimerRef.current) {
+          clearTimeout(celebrationTimerRef.current);
+          celebrationTimerRef.current = null;
+        }
+
+        setShowCelebration(true);
+
+        celebrationTimerRef.current = setTimeout(() => {
+          setShowCelebration(false);
+          isCelebrationActiveRef.current = false;
+          celebrationTimerRef.current = null;
+        }, 1000);
+      }
+    } else {
+      // Cart total dropped back to <= 100 (e.g., item removed)
+      hasCelebratedForCurrentThresholdRef.current = false;
+      if (isCelebrationActiveRef.current || showCelebration) {
+        if (celebrationTimerRef.current) {
+          clearTimeout(celebrationTimerRef.current);
+          celebrationTimerRef.current = null;
+        }
+        isCelebrationActiveRef.current = false;
+        setShowCelebration(false);
+      }
+    }
+  }, [rawItemTotal > 100, cart.length > 0, showCelebration]);
+
+  // Cart operations: instant state updates with bounded animations to prevent UI lag on rapid clicks
   const handleAddToCart = (product: Product, e?: React.MouseEvent<HTMLButtonElement>) => {
     if (product.status !== 'Available') return;
 
     if (e && cartIconRef.current) {
-      const btnRect = e.currentTarget.getBoundingClientRect();
-      const flyingId = Math.random().toString(36).substring(2, 9);
-      const newFlying: FlyingItem = {
-        id: flyingId,
-        imageUrl: product.imageUrl,
-        x: btnRect.left,
-        y: btnRect.top
-      };
-      setFlyingItems((prev) => [...prev, newFlying]);
-      setTimeout(() => {
-        setFlyingItems((prev) => prev.filter((item) => item.id !== flyingId));
-      }, 800);
+      try {
+        const btnRect = e.currentTarget.getBoundingClientRect();
+        const flyingId = Math.random().toString(36).substring(2, 9);
+        const newFlying: FlyingItem = {
+          id: flyingId,
+          imageUrl: product.imageUrl,
+          x: btnRect.left,
+          y: btnRect.top
+        };
+
+        // Bound concurrent flying items to 2 to keep UI smooth and 60fps even with rapid clicking
+        setFlyingItems((prev) => [...prev.slice(-1), newFlying]);
+
+        const timer = setTimeout(() => {
+          setFlyingItems((prev) => prev.filter((item) => item.id !== flyingId));
+          flyingTimersRef.current = flyingTimersRef.current.filter((t) => t !== timer);
+        }, 700);
+
+        flyingTimersRef.current.push(timer);
+      } catch (err) {
+        console.warn('Flying animation notice', err);
+      }
     }
 
     setCart((prev) => {
@@ -1144,6 +1246,7 @@ export default function App() {
                   quantityInCart={inCart}
                   onAddToCart={handleAddToCart}
                   onUpdateQty={handleUpdateCartQty}
+                  onSelectProduct={(p) => setSelectedProductDetails(p)}
                 />
               );
             })}
@@ -1251,18 +1354,22 @@ export default function App() {
       <AnimatePresence>
         {showCelebration && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.2 }}
-            className="fixed inset-0 z-[280] flex items-center justify-center pointer-events-none p-6"
+            key="free-delivery-celebration-overlay"
+            initial={{ opacity: 0, scale: 0.8, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -10 }}
+            transition={{ type: 'spring', damping: 22, stiffness: 280, duration: 0.2 }}
+            className="fixed inset-0 z-[280] flex items-center justify-center pointer-events-none p-6 select-none"
+            aria-live="polite"
           >
             <motion.div
-              animate={{ rotate: [0, -6, 6, -6, 6, 0], y: [0, -30, 0] }}
-              className="bg-white/95 backdrop-blur-md p-6 rounded-[32px] shadow-2xl border border-green-200 flex flex-col items-center gap-3 text-center"
+              animate={{ rotate: [0, -3, 3, -3, 3, 0], y: [0, -8, 0] }}
+              transition={{ duration: 0.6, ease: 'easeInOut' }}
+              className="bg-white/95 backdrop-blur-md px-7 py-6 rounded-[32px] shadow-2xl border-2 border-green-300 flex flex-col items-center gap-2.5 text-center pointer-events-none select-none max-w-xs mx-auto ring-4 ring-green-500/10"
             >
-              <span className="text-5xl animate-bounce">🎉</span>
-              <div>
-                <h3 className="text-xl font-black text-green-700 uppercase">
+              <span className="text-5xl animate-bounce select-none pointer-events-none">🎉</span>
+              <div className="pointer-events-none select-none">
+                <h3 className="text-xl font-black text-green-700 uppercase tracking-tight">
                   {t('freeUnlockedTitle')}
                 </h3>
                 <p className="text-xs font-bold text-slate-500 mt-0.5">
@@ -1275,6 +1382,26 @@ export default function App() {
       </AnimatePresence>
 
       {/* Modals */}
+      {/* Dynamic Product Details Popup */}
+      <ProductDetailsModal
+        isOpen={!!selectedProductDetails}
+        product={
+          selectedProductDetails
+            ? (products.find((p) => p.id === selectedProductDetails.id) || selectedProductDetails)
+            : null
+        }
+        lang={lang}
+        quantityInCart={
+          selectedProductDetails
+            ? (cart.find((i) => i.id === selectedProductDetails.id)?.qty || 0)
+            : 0
+        }
+        onClose={() => setSelectedProductDetails(null)}
+        onAddToCart={handleAddToCart}
+        onUpdateQty={handleUpdateCartQty}
+        onOpenCart={() => setIsCartOpen(true)}
+      />
+
       <CartModal
         isOpen={isCartOpen}
         cart={cart}

@@ -49,6 +49,7 @@ export function AdminModal({
     unit: string;
     imageUrl: string;
     category: string;
+    description: string;
     status: 'Available' | 'Out of Stock' | 'Unavailable';
   }>({
     name: '',
@@ -56,6 +57,7 @@ export function AdminModal({
     unit: 'kg',
     imageUrl: '',
     category: '',
+    description: '',
     status: 'Available'
   });
 
@@ -70,6 +72,8 @@ export function AdminModal({
   const [adminAuthEmail, setAdminAuthEmail] = useState<string>('sonkarrajeevkumar36@gmail.com');
   const [adminAuthPassword, setAdminAuthPassword] = useState<string>('');
   const [isAdminLoggingIn, setIsAdminLoggingIn] = useState<boolean>(false);
+  const [isSavingProduct, setIsSavingProduct] = useState<boolean>(false);
+  const [isCreatingCategory, setIsCreatingCategory] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -130,6 +134,7 @@ export function AdminModal({
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCreatingCategory) return;
     if (!newCatName.trim()) return;
 
     const normName = newCatName.trim().toLowerCase();
@@ -138,6 +143,7 @@ export function AdminModal({
       return;
     }
 
+    setIsCreatingCategory(true);
     try {
       await addDoc(collection(db, 'categories'), {
         name: newCatName.trim(),
@@ -151,6 +157,8 @@ export function AdminModal({
       onRefreshProducts();
     } catch (err: any) {
       onShowError('Failed to Create Category', getFriendlyErrorMessage(err));
+    } finally {
+      setIsCreatingCategory(false);
     }
   };
 
@@ -166,6 +174,7 @@ export function AdminModal({
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSavingProduct) return;
     const current = editingProduct || prodForm;
 
     if (!current.name || !current.price || !current.category) {
@@ -173,6 +182,7 @@ export function AdminModal({
       return;
     }
 
+    setIsSavingProduct(true);
     try {
       const productPayload = {
         name: current.name.trim(),
@@ -182,6 +192,7 @@ export function AdminModal({
         category: current.category,
         normalizedCategory: current.category.trim().toLowerCase(),
         status: current.status || 'Available',
+        description: (current.description || '').trim(),
         updatedAt: serverTimestamp()
       };
 
@@ -203,11 +214,14 @@ export function AdminModal({
         unit: 'kg',
         imageUrl: '',
         category: '',
+        description: '',
         status: 'Available'
       });
       onRefreshProducts();
     } catch (err: any) {
       onShowError('Failed to Save Product', getFriendlyErrorMessage(err));
+    } finally {
+      setIsSavingProduct(false);
     }
   };
 
@@ -692,9 +706,13 @@ export function AdminModal({
                   />
                   <button
                     type="submit"
-                    className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                    disabled={isCreatingCategory}
+                    className="bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
                   >
-                    Add
+                    {isCreatingCategory ? (
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : null}
+                    <span>Add</span>
                   </button>
                 </form>
 
@@ -816,6 +834,17 @@ export function AdminModal({
                     }}
                   />
 
+                  <textarea
+                    placeholder="Product Description (e.g. Farm fresh organic apples, rich in dietary fiber and vitamins...)"
+                    rows={3}
+                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs outline-none text-slate-200 resize-none placeholder-slate-500 focus:border-green-500 transition-colors"
+                    value={editingProduct ? (editingProduct.description || '') : prodForm.description}
+                    onChange={(e) => {
+                      if (editingProduct) setEditingProduct({ ...editingProduct, description: e.target.value });
+                      else setProdForm({ ...prodForm, description: e.target.value });
+                    }}
+                  />
+
                   <div className="grid grid-cols-2 gap-3">
                     <select
                       className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs outline-none text-slate-200"
@@ -851,9 +880,13 @@ export function AdminModal({
 
                   <button
                     type="submit"
-                    className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                    disabled={isSavingProduct}
+                    className="w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-2"
                   >
-                    {editingProduct ? 'Update Product' : 'Add to Stock'}
+                    {isSavingProduct ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : null}
+                    <span>{editingProduct ? 'Update Product' : 'Add to Stock'}</span>
                   </button>
                 </form>
               </div>

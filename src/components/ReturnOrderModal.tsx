@@ -42,6 +42,7 @@ export function ReturnOrderModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!auth.currentUser) {
       onError(lang === 'hi' ? 'कृपया वापसी का अनुरोध करने के लिए पहले लॉगिन करें।' : 'Please sign in first to request an order return.');

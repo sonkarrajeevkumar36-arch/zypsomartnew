@@ -107,10 +107,18 @@ export const translations: Record<Language, Record<string, any>> = {
     hideOffers: "Hide Offers",
     hideAllBanners: "Hide All Banners",
     showBanners: "Show Banners",
-    showOffers: "Show Offers",
     bannersHidden: "Promotional banners are hidden",
     seasonalHidden: "Seasonal offers banner is hidden",
     promoHidden: "Promo banner is hidden",
+    productDetails: "Product Details",
+    productDescription: "About This Product",
+    noDescription: "Pure, fresh and premium quality item sourced directly from trusted local farms and suppliers, hygienically packed for fast doorstep delivery.",
+    fastDeliveryPromise: "Superfast 20-30 min delivery",
+    qualityPromise: "100% Quality & Freshness Guarantee",
+    returnPromise: "Easy returns on delivery inspection",
+    inCart: "In Cart",
+    addToCart: "Add to Cart",
+    viewDetails: "View Details",
     categories: {
       all: "All",
       fruits: "Fruits",
@@ -293,7 +301,16 @@ export const translations: Record<Language, Record<string, any>> = {
     presets: "उत्सव और सीज़नल थीम्स",
     customColor: "कस्टम ब्रांड रंग",
     applyTheme: "थीम लागू करें",
-    themeApplied: "थीम सफलतापूर्वक अपडेट हो गई!"
+    themeApplied: "थीम सफलतापूर्वक अपडेट हो गई!",
+    productDetails: "उत्पाद का विवरण",
+    productDescription: "उत्पाद के बारे में",
+    noDescription: "विश्वसनीय स्थानीय स्रोतों से प्राप्त शुद्ध, ताज़ा और प्रीमियम गुणवत्ता का उत्पाद, सुरक्षित और स्वच्छ पैकिंग के साथ सीधे आपके घर तक।",
+    fastDeliveryPromise: "20-30 मिनट में सुपरफास्ट डिलीवरी",
+    qualityPromise: "100% ताज़गी और गुणवत्ता की गारंटी",
+    returnPromise: "डिलीवरी पर आसान वापसी सुविधा",
+    inCart: "कार्ट में शामिल",
+    addToCart: "कार्ट में जोड़ें",
+    viewDetails: "विवरण देखें"
   }
 };
 

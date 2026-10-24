@@ -30,6 +30,7 @@ export interface Product {
   category: string;
   normalizedCategory?: string;
   status: 'Available' | 'Out of Stock' | 'Unavailable';
+  description?: string;
   createdAt?: any;
   updatedAt?: any;
 }
