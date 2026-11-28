@@ -2,22 +2,15 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 
-const defaultFirebaseConfig = {
-  apiKey: "AIzaSyDxztzPoCTCzckaEsvupHJOyCHEhAxr9DU",
-  authDomain: "zypso-mart-cd989.firebaseapp.com",
-  projectId: "zypso-mart-cd989",
-  storageBucket: "zypso-mart-cd989.firebasestorage.app",
-  messagingSenderId: "91046649188",
-  appId: "1:91046649188:web:0472d26bc617a5396f2e71"
-};
+const env = (import.meta as any).env || {};
 
 const firebaseConfig = {
-  apiKey: (import.meta as any).env?.VITE_FIREBASE_API_KEY || defaultFirebaseConfig.apiKey,
-  authDomain: (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN || defaultFirebaseConfig.authDomain,
-  projectId: (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID || defaultFirebaseConfig.projectId,
-  storageBucket: (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET || defaultFirebaseConfig.storageBucket,
-  messagingSenderId: (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultFirebaseConfig.messagingSenderId,
-  appId: (import.meta as any).env?.VITE_FIREBASE_APP_ID || defaultFirebaseConfig.appId
+  apiKey: env.VITE_FIREBASE_API_KEY || 'demo-firebase-api-key',
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || 'demo-project.firebaseapp.com',
+  projectId: env.VITE_FIREBASE_PROJECT_ID || 'demo-project',
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || 'demo-project.firebasestorage.app',
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '000000000000',
+  appId: env.VITE_FIREBASE_APP_ID || '1:000000000000:web:0000000000000000000000'
 };
 
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
