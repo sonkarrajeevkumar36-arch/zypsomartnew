@@ -1,12 +1,14 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Plus, Check } from 'lucide-react';
-import { Product, Language } from '../types';
+import { Plus } from 'lucide-react';
+import { Product, Language, ResolvedProductOffer } from '../types';
 import { getTranslation } from '../translations';
+import { formatRupees } from '../utils/offerUtils';
 
 interface ProductCardProps {
   key?: React.Key;
   product: Product;
+  offer?: ResolvedProductOffer | null;
   lang: Language;
   quantityInCart: number;
   onAddToCart: (product: Product, e?: React.MouseEvent<HTMLButtonElement>) => void;
@@ -16,6 +18,7 @@ interface ProductCardProps {
 
 export function ProductCard({
   product,
+  offer,
   lang,
   quantityInCart,
   onAddToCart,
@@ -24,6 +27,15 @@ export function ProductCard({
 }: ProductCardProps) {
   const t = (key: string, params?: Record<string, string | number>) => getTranslation(lang, key, params);
   const isAvailable = product.status === 'Available';
+  const hasOffer = Boolean(offer && offer.discountedPrice < offer.originalPrice);
+
+  const displayPrice = hasOffer ? offer!.discountedPrice : (Number(product?.price) || 0);
+  const originalPrice = hasOffer ? offer!.originalPrice : 0;
+  const offerBannerText = hasOffer ? (offer!.badgeText || offer!.title || t('specialOffer')) : '';
+
+  const effectiveProduct: Product = hasOffer
+    ? { ...product, price: offer!.discountedPrice }
+    : product;
 
   return (
     <motion.div
@@ -38,9 +50,9 @@ export function ProductCard({
           onSelectProduct?.(product);
         }
       }}
-      className={`bg-white rounded-2xl p-3 shadow-xs border border-slate-100 flex flex-col justify-between relative transition-all cursor-pointer group hover:border-green-300 hover:shadow-md select-none focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
-        !isAvailable ? 'opacity-60' : ''
-      }`}
+      className={`bg-white rounded-2xl p-3 shadow-xs border flex flex-col justify-between relative transition-all cursor-pointer group hover:border-green-300 hover:shadow-md select-none focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+        hasOffer ? 'border-rose-100' : 'border-slate-100'
+      } ${!isAvailable ? 'opacity-60' : ''}`}
     >
       {/* Product Image */}
       <div className="bg-slate-50 rounded-xl h-28 mb-2 flex items-center justify-center p-2 overflow-hidden relative">
@@ -58,9 +70,21 @@ export function ProductCard({
           }}
         />
 
+        {hasOffer && (
+          <div className="absolute top-1.5 left-1.5 bg-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-xs tracking-tight">
+            {t('offLabel', { val: offer!.discountPercentage })}
+          </div>
+        )}
+
         {!isAvailable && (
           <div className="absolute top-2 right-2 bg-slate-900/85 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
             {product?.status === 'Out of Stock' ? t('soldOut') : (product?.status || 'Unavailable')}
+          </div>
+        )}
+
+        {hasOffer && isAvailable && (
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-r from-emerald-600 to-green-600 text-white text-[9px] font-extrabold px-2 py-0.5 truncate text-center">
+            {offerBannerText}
           </div>
         )}
       </div>
@@ -76,11 +100,18 @@ export function ProductCard({
       </div>
 
       {/* Price & Add to Cart Controls */}
-      <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
-        <div className="flex flex-col">
-          <span className="font-black text-xs sm:text-sm text-slate-900 leading-none">
-            ₹{Number(product?.price) || 0}
-          </span>
+      <div className="flex items-center justify-between gap-1 mt-auto pt-2 border-t border-slate-50">
+        <div className="flex flex-col min-w-0">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className={`font-black text-xs sm:text-sm leading-none ${hasOffer ? 'text-green-700' : 'text-slate-900'}`}>
+              ₹{formatRupees(displayPrice)}
+            </span>
+            {hasOffer && (
+              <span className="text-[10px] text-slate-400 font-semibold line-through leading-none">
+                ₹{formatRupees(originalPrice)}
+              </span>
+            )}
+          </div>
           <span className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">
             / {lang === 'hi' && product?.unit ? t(`units.${(product.unit || '').toLowerCase()}`) || product.unit : (product?.unit || 'kg')}
           </span>
@@ -88,7 +119,7 @@ export function ProductCard({
 
         {quantityInCart > 0 ? (
           <div
-            className="flex items-center bg-green-50 border border-green-200 rounded-xl p-0.5 shadow-xs"
+            className="flex items-center bg-green-50 border border-green-200 rounded-xl p-0.5 shadow-xs shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -122,10 +153,10 @@ export function ProductCard({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              onAddToCart(product, e);
+              onAddToCart(effectiveProduct, e);
             }}
             disabled={!isAvailable}
-            className="bg-white border border-green-600 text-green-700 text-[10px] font-black px-3.5 py-1.5 rounded-xl shadow-xs hover:bg-green-600 hover:text-white transition-all cursor-pointer active:scale-95 flex items-center gap-1 disabled:opacity-50 disabled:pointer-events-none"
+            className="bg-white border border-green-600 text-green-700 text-[10px] font-black px-3.5 py-1.5 rounded-xl shadow-xs hover:bg-green-600 hover:text-white transition-all cursor-pointer active:scale-95 flex items-center gap-1 disabled:opacity-50 disabled:pointer-events-none shrink-0"
           >
             <span>{t('add')}</span>
             <Plus className="w-3 h-3" />

@@ -34,6 +34,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /offers/{offerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Customer orders
     match /orders/{orderId} {
       // Users can only read their own orders; admins can read all

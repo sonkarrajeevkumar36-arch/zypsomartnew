@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, ShoppingCart, ChevronRight, Sparkles, AlertCircle } from 'lucide-react';
 import { CartItem, Language } from '../types';
 import { getTranslation } from '../translations';
+import { formatRupees, roundCurrency } from '../utils/offerUtils';
 
 interface CartModalProps {
   isOpen: boolean;
@@ -41,10 +42,20 @@ export function CartModal({
 
   const t = (key: string, params?: Record<string, string | number>) => getTranslation(lang, key, params);
 
-  const itemTotal = cart.reduce((sum, item) => sum + (Number(item?.price) || 0) * (Number(item?.qty) || 0), 0);
+  const itemTotal = roundCurrency(
+    cart.reduce((sum, item) => sum + (Number(item?.price) || 0) * (Number(item?.qty) || 0), 0)
+  );
+  const totalOfferSavings = roundCurrency(
+    cart.reduce((sum, item) => {
+      const orig = Number(item?.originalPrice) || 0;
+      const cur = Number(item?.price) || 0;
+      const qty = Number(item?.qty) || 0;
+      return orig > cur ? sum + (orig - cur) * qty : sum;
+    }, 0)
+  );
   const isFreeDelivery = itemTotal > 100;
   const appliedDeliveryCharge = cart.length > 0 && !isFreeDelivery ? (Number(deliveryCharge) || 0) : 0;
-  const grandTotal = itemTotal + appliedDeliveryCharge;
+  const grandTotal = roundCurrency(itemTotal + appliedDeliveryCharge);
 
   return (
     <AnimatePresence>
@@ -128,12 +139,24 @@ export function CartModal({
                         <h4 className="text-xs font-bold text-slate-900 line-clamp-1">
                           {item.name}
                         </h4>
-                        <p className="text-[11px] font-black text-green-700 mt-0.5">
-                          ₹{item.price}{' '}
+                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                          <span className="text-[11px] font-black text-green-700">
+                            ₹{formatRupees(Number(item.price) || 0)}
+                          </span>
+                          {item.originalPrice && item.originalPrice > item.price && (
+                            <span className="text-[10px] text-slate-400 line-through font-semibold">
+                              ₹{formatRupees(item.originalPrice)}
+                            </span>
+                          )}
+                          {item.discountPercentage && item.discountPercentage > 0 && (
+                            <span className="text-[9px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded">
+                              {item.discountPercentage}% OFF
+                            </span>
+                          )}
                           <span className="text-slate-400 font-normal text-[9px]">
                             / {lang === 'hi' && item.unit ? t(`units.${item.unit.toLowerCase()}`) || item.unit : item.unit}
                           </span>
-                        </p>
+                        </div>
                       </div>
 
                       {/* Quantity Controls */}
@@ -228,8 +251,14 @@ export function CartModal({
               <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100">
                 <div className="flex items-center justify-between">
                   <span>{t('itemTotal')}</span>
-                  <span className="font-bold text-slate-900">₹{itemTotal}</span>
+                  <span className="font-bold text-slate-900">₹{formatRupees(itemTotal)}</span>
                 </div>
+                {totalOfferSavings > 0 && (
+                  <div className="flex items-center justify-between text-emerald-700">
+                    <span className="font-bold">{t('offerSavings')}</span>
+                    <span className="font-black">-₹{formatRupees(totalOfferSavings)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span>{t('deliveryCharge')}</span>
                   <span className="font-bold">
@@ -242,7 +271,7 @@ export function CartModal({
                 </div>
                 <div className="flex items-center justify-between font-black text-sm text-slate-900 pt-1.5 border-t border-dashed border-slate-200">
                   <span>{t('grandTotal')}</span>
-                  <span className="text-green-700 font-extrabold text-base">₹{grandTotal}</span>
+                  <span className="text-green-700 font-extrabold text-base">₹{formatRupees(grandTotal)}</span>
                 </div>
               </div>
 

@@ -17,13 +17,15 @@ import {
 } from 'firebase/firestore';
 
 import { auth, db, getFriendlyErrorMessage } from './firebase';
-import { Product, Category, Order, CartItem, ModalAlert, FlyingItem, Language, BeforeInstallPromptEvent } from './types';
+import { Product, Category, Order, CartItem, ModalAlert, FlyingItem, Language, BeforeInstallPromptEvent, Offer } from './types';
 import { getTranslation } from './translations';
 import { getShuffledProducts } from './utils/productShuffle';
+import { resolveOffers, roundCurrency } from './utils/offerUtils';
 import { Header } from './components/Header';
 import { Banner } from './components/Banner';
 import { CategoryList } from './components/CategoryList';
 import { SeasonalOffers } from './components/SeasonalOffers';
+import { ProductOffersSection } from './components/ProductOffersSection';
 import { ProductCard } from './components/ProductCard';
 import { ProductDetailsModal } from './components/ProductDetailsModal';
 import { CartModal } from './components/CartModal';
@@ -208,6 +210,10 @@ export default function App() {
   // Orders lists
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [allAdminOrders, setAllAdminOrders] = useState<Order[]>([]);
+
+  // Live Product Offers from Firestore
+  const [rawOffers, setRawOffers] = useState<Offer[]>([]);
+  const [offerTickMs, setOfferTickMs] = useState<number>(() => Date.now());
 
   // Admin PIN input
   const [adminPin, setAdminPin] = useState<string>('');
@@ -680,11 +686,11 @@ export default function App() {
         const loadedCats: Category[] = catSnap.docs.map((d) => {
           const data = d.data() as any;
           return {
+            ...data,
             id: d.id,
             name: data?.name || 'Category',
             icon: data?.icon || '📦',
             normalizedName: data?.normalizedName || (data?.name || '').toLowerCase().trim(),
-            ...data
           };
         });
         setCategories(loadedCats);
@@ -696,6 +702,7 @@ export default function App() {
         const loadedProds: Product[] = prodSnap.docs.map((d) => {
           const data = d.data() as any;
           return {
+            ...data,
             id: d.id,
             name: data?.name || 'Product',
             price: Number(data?.price) || 0,
@@ -705,7 +712,6 @@ export default function App() {
             normalizedCategory: data?.normalizedCategory || (data?.category || '').toLowerCase().trim(),
             status: data?.status || 'Available',
             description: (data?.description || '').trim(),
-            ...data
           };
         });
         setProducts(loadedProds);
@@ -736,6 +742,65 @@ export default function App() {
     }
   };
 
+  // Real-time category sync so admin category image or name changes reflect immediately
+  useEffect(() => {
+    try {
+      const unsub = onSnapshot(
+        collection(db, 'categories'),
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const liveCats: Category[] = snapshot.docs.map((d) => {
+              const data = d.data() as any;
+              return {
+                ...data,
+                id: d.id,
+                name: data?.name || 'Category',
+                icon: data?.icon || '📦',
+                normalizedName: data?.normalizedName || (data?.name || '').toLowerCase().trim(),
+              };
+            });
+            setCategories(liveCats);
+            try {
+              localStorage.setItem('zypsum_categories_cache', JSON.stringify(liveCats));
+            } catch {
+              // ignore storage quota issues
+            }
+          }
+        },
+        (err) => {
+          console.warn('[Categories Snapshot Warning]:', err);
+        }
+      );
+      return () => unsub();
+    } catch (err) {
+      console.warn('[Categories Listener Init Error]:', err);
+    }
+  }, []);
+
+  // Real-time offers sync directly from Firestore `offers` collection (single listener, optimized reads)
+  useEffect(() => {
+    try {
+      const q = query(collection(db, 'offers'), limit(100));
+      const unsub = onSnapshot(
+        q,
+        (snapshot) => {
+          const loadedOffers: Offer[] = snapshot.docs.map((d) => ({
+            ...(d.data() as Record<string, any>),
+            id: d.id
+          }));
+          setRawOffers(loadedOffers);
+          setOfferTickMs(Date.now());
+        },
+        (err) => {
+          console.warn('[Offers Snapshot Warning]:', err);
+        }
+      );
+      return () => unsub();
+    } catch (err) {
+      console.warn('[Offers Listener Init Error]:', err);
+    }
+  }, []);
+
   useEffect(() => {
     syncInventory(false);
     const interval = setInterval(() => {
@@ -744,10 +809,63 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // Resolve active, valid offers against live products
+  const { activeOffers, offerByProductId } = useMemo(() => {
+    return resolveOffers(rawOffers, products, offerTickMs);
+  }, [rawOffers, products, offerTickMs]);
+
+  // Automatically expire offers on schedule if any active offer has an expiry timestamp
+  useEffect(() => {
+    const upcomingExpiries = activeOffers
+      .map((o) => o.validUntilMs)
+      .filter((ms): ms is number => typeof ms === 'number' && ms > offerTickMs);
+
+    if (upcomingExpiries.length === 0) return;
+
+    const nextExpiryMs = Math.min(...upcomingExpiries);
+    const delay = Math.min(Math.max(nextExpiryMs - Date.now() + 250, 1000), 2147483647);
+    const timer = setTimeout(() => {
+      setOfferTickMs(Date.now());
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [activeOffers, offerTickMs]);
+
+  // Sync cart item prices with live products & active Firestore offers so totals are always accurate
+  const effectiveCart = useMemo<CartItem[]>(() => {
+    return cart.map((item) => {
+      const activeOffer = offerByProductId[item.id];
+      const liveProduct = products.find((p) => p.id === item.id);
+      if (activeOffer) {
+        return {
+          ...item,
+          price: activeOffer.discountedPrice,
+          originalPrice: activeOffer.originalPrice,
+          discountPercentage: activeOffer.discountPercentage
+        };
+      }
+      if (liveProduct) {
+        return {
+          ...item,
+          price: Number(liveProduct.price) || item.price,
+          originalPrice: undefined,
+          discountPercentage: undefined
+        };
+      }
+      return {
+        ...item,
+        originalPrice: undefined,
+        discountPercentage: undefined
+      };
+    });
+  }, [cart, offerByProductId, products]);
+
   // Free delivery threshold tracking with safe memoization
   const rawItemTotal = useMemo(() => {
-    return cart.reduce((sum, i) => sum + (Number(i?.price) || 0) * (Number(i?.qty) || 0), 0);
-  }, [cart]);
+    return roundCurrency(
+      effectiveCart.reduce((sum, i) => sum + (Number(i?.price) || 0) * (Number(i?.qty) || 0), 0)
+    );
+  }, [effectiveCart]);
 
   // Clean up all timers safely on unmount to prevent memory leaks and zombie timers
   useEffect(() => {
@@ -828,12 +946,21 @@ export default function App() {
       }
     }
 
+    const activeOffer = offerByProductId[product.id];
+    const unitPrice = activeOffer ? activeOffer.discountedPrice : (Number(product.price) || 0);
+    const originalPrice = activeOffer ? activeOffer.originalPrice : undefined;
+    const discountPercentage = activeOffer ? activeOffer.discountPercentage : undefined;
+
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
-        return prev.map((item) => (item.id === product.id ? { ...item, qty: item.qty + 1 } : item));
+        return prev.map((item) =>
+          item.id === product.id
+            ? { ...item, price: unitPrice, originalPrice, discountPercentage, qty: item.qty + 1 }
+            : item
+        );
       }
-      return [...prev, { ...product, qty: 1 }];
+      return [...prev, { ...product, price: unitPrice, originalPrice, discountPercentage, qty: 1 }];
     });
   };
 
@@ -887,15 +1014,17 @@ export default function App() {
       return;
     }
 
-    if (cart.length === 0) return;
+    if (effectiveCart.length === 0) return;
 
     setIsPlacingOrder(true);
-    const itemTotal = cart.reduce((sum, item) => sum + (Number(item?.price) || 0) * (Number(item?.qty) || 0), 0);
+    const itemTotal = roundCurrency(
+      effectiveCart.reduce((sum, item) => sum + (Number(item?.price) || 0) * (Number(item?.qty) || 0), 0)
+    );
     const appliedDelivery = itemTotal > 100 ? 0 : deliveryCharge;
-    const finalTotal = itemTotal + appliedDelivery;
+    const finalTotal = roundCurrency(itemTotal + appliedDelivery);
 
     // Sanitize cart items to prevent undefined fields from rejecting Firestore write
-    const sanitizedItems = cart.map((item) => ({
+    const sanitizedItems = effectiveCart.map((item) => ({
       id: String(item?.id || ''),
       name: String(item?.name || 'Grocery Item'),
       price: Number(item?.price) || 0,
@@ -1216,6 +1345,18 @@ export default function App() {
           />
         )}
 
+        {/* Live Product Offers from Firestore */}
+        {!searchQuery && activeOffers.length > 0 && (
+          <ProductOffersSection
+            offers={activeOffers}
+            cart={effectiveCart}
+            lang={lang}
+            onSelectOffer={(offer) => setSelectedProductDetails(offer.product)}
+            onAddToCart={handleAddToCart}
+            onUpdateQty={handleUpdateCartQty}
+          />
+        )}
+
         {/* Syncing notification bar */}
         {isSyncing && (
           <div className="bg-green-50 border border-green-100 rounded-xl p-2.5 flex items-center justify-center gap-2 animate-pulse">
@@ -1237,11 +1378,12 @@ export default function App() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5">
             {filteredProducts.slice(0, displayLimit).map((product) => {
-              const inCart = cart.find((i) => i.id === product.id)?.qty || 0;
+              const inCart = effectiveCart.find((i) => i.id === product.id)?.qty || 0;
               return (
                 <ProductCard
                   key={product.id}
                   product={product}
+                  offer={offerByProductId[product.id]}
                   lang={lang}
                   quantityInCart={inCart}
                   onAddToCart={handleAddToCart}
@@ -1390,10 +1532,11 @@ export default function App() {
             ? (products.find((p) => p.id === selectedProductDetails.id) || selectedProductDetails)
             : null
         }
+        offer={selectedProductDetails ? offerByProductId[selectedProductDetails.id] : null}
         lang={lang}
         quantityInCart={
           selectedProductDetails
-            ? (cart.find((i) => i.id === selectedProductDetails.id)?.qty || 0)
+            ? (effectiveCart.find((i) => i.id === selectedProductDetails.id)?.qty || 0)
             : 0
         }
         onClose={() => setSelectedProductDetails(null)}
@@ -1404,7 +1547,7 @@ export default function App() {
 
       <CartModal
         isOpen={isCartOpen}
-        cart={cart}
+        cart={effectiveCart}
         lang={lang}
         deliveryCharge={deliveryCharge}
         customerName={customerName}

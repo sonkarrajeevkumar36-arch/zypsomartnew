@@ -154,7 +154,13 @@ export const translations: Record<Language, Record<string, any>> = {
     presets: "Seasonal & Festive Themes",
     customColor: "Custom Brand Color",
     applyTheme: "Apply Theme",
-    themeApplied: "Theme Updated Successfully!"
+    themeApplied: "Theme Updated Successfully!",
+    hotDeals: "Today's Offers",
+    specialOffer: "Special Offer",
+    limitedOffer: "Limited Offer",
+    offLabel: "{val}% OFF",
+    saveAmount: "Save ₹{val}",
+    offerSavings: "Offer Savings"
   },
   hi: {
     appName: "जिप्सोमार्ट",
@@ -310,7 +316,13 @@ export const translations: Record<Language, Record<string, any>> = {
     returnPromise: "डिलीवरी पर आसान वापसी सुविधा",
     inCart: "कार्ट में शामिल",
     addToCart: "कार्ट में जोड़ें",
-    viewDetails: "विवरण देखें"
+    viewDetails: "विवरण देखें",
+    hotDeals: "आज के ऑफर्स",
+    specialOffer: "स्पेशल ऑफर",
+    limitedOffer: "सीमित ऑफर",
+    offLabel: "{val}% छूट",
+    saveAmount: "₹{val} बचाएं",
+    offerSavings: "ऑफर बचत"
   }
 };
 

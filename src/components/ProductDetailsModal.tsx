@@ -1,12 +1,14 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus, ShoppingCart, Zap, Sparkles, Tag } from 'lucide-react';
-import { Product, Language } from '../types';
+import { Product, Language, ResolvedProductOffer } from '../types';
 import { getTranslation } from '../translations';
+import { formatRupees } from '../utils/offerUtils';
 
 interface ProductDetailsModalProps {
   isOpen: boolean;
   product: Product | null;
+  offer?: ResolvedProductOffer | null;
   lang: Language;
   quantityInCart: number;
   onClose: () => void;
@@ -18,6 +20,7 @@ interface ProductDetailsModalProps {
 export function ProductDetailsModal({
   isOpen,
   product,
+  offer,
   lang,
   quantityInCart,
   onClose,
@@ -29,7 +32,11 @@ export function ProductDetailsModal({
 
   const t = (key: string, params?: Record<string, string | number>) => getTranslation(lang, key, params);
   const isAvailable = product.status === 'Available';
-  const price = Number(product.price) || 0;
+  const hasOffer = Boolean(offer && offer.discountedPrice < offer.originalPrice);
+  const price = hasOffer ? offer!.discountedPrice : (Number(product.price) || 0);
+  const originalPrice = hasOffer ? offer!.originalPrice : 0;
+  const effectiveProduct: Product = hasOffer ? { ...product, price: offer!.discountedPrice } : product;
+
   const unitLabel = lang === 'hi' && product.unit
     ? t(`units.${(product.unit || '').toLowerCase()}`) || product.unit
     : (product.unit || 'kg');
@@ -106,12 +113,34 @@ export function ProductDetailsModal({
                 )}
               </div>
 
+              {/* Offer Discount Badge */}
+              {hasOffer && (
+                <div className="absolute top-3.5 right-3.5 bg-rose-600 text-white text-[11px] font-black px-3 py-1 rounded-full shadow-sm uppercase tracking-wider">
+                  {t('offLabel', { val: offer!.discountPercentage })}
+                </div>
+              )}
+
               {/* Delivery ETA pill badge */}
               <div className="absolute bottom-3.5 left-3.5 inline-flex items-center gap-1.5 bg-white/95 text-slate-800 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-xs border border-slate-200/80 backdrop-blur-md">
                 <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                 <span>15-25 mins delivery</span>
               </div>
             </div>
+
+            {/* Active Offer Banner */}
+            {hasOffer && (
+              <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200/80 rounded-2xl px-4 py-2.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Tag className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-xs font-extrabold text-emerald-900 truncate">
+                    {offer!.title || offer!.badgeText || t('specialOffer')}
+                  </span>
+                </div>
+                <span className="text-[11px] font-black text-emerald-700 bg-white px-2.5 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                  {t('saveAmount', { val: formatRupees(offer!.savingsAmount) })}
+                </span>
+              </div>
+            )}
 
             {/* Product Title & Pricing Bar */}
             <div className="space-y-2">
@@ -133,8 +162,15 @@ export function ProductDetailsModal({
                 </div>
 
                 <div className="text-right shrink-0">
-                  <div className="text-2xl sm:text-3xl font-black text-green-700 tracking-tight leading-none">
-                    ₹{price}
+                  <div className="flex items-baseline justify-end gap-2">
+                    {hasOffer && (
+                      <span className="text-sm sm:text-base font-bold text-slate-400 line-through">
+                        ₹{formatRupees(originalPrice)}
+                      </span>
+                    )}
+                    <div className="text-2xl sm:text-3xl font-black text-green-700 tracking-tight leading-none">
+                      ₹{formatRupees(price)}
+                    </div>
                   </div>
                   <span className="text-[11px] text-slate-400 font-bold uppercase block mt-1">
                     per {unitLabel}
@@ -193,7 +229,7 @@ export function ProductDetailsModal({
                         {quantityInCart} in Cart
                       </div>
                       <div className="text-[10px] font-bold text-green-700">
-                        Total: ₹{price * quantityInCart}
+                        Total: ₹{formatRupees(price * quantityInCart)}
                       </div>
                     </div>
 
@@ -228,7 +264,7 @@ export function ProductDetailsModal({
                 <button
                   id="details-add-to-cart-btn"
                   type="button"
-                  onClick={(e) => onAddToCart(product, e)}
+                  onClick={(e) => onAddToCart(effectiveProduct, e)}
                   className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 active:scale-[0.98] text-white font-black text-sm sm:text-base py-3.5 px-6 rounded-2xl shadow-lg shadow-green-600/25 transition-all flex items-center justify-between cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
@@ -236,7 +272,7 @@ export function ProductDetailsModal({
                     <span>{t('addToCart')}</span>
                   </div>
                   <span className="text-xs sm:text-sm font-black bg-white/20 px-3 py-1 rounded-xl">
-                    ₹{price} / {unitLabel}
+                    ₹{formatRupees(price)} / {unitLabel}
                   </span>
                 </button>
               )
